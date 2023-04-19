@@ -3,7 +3,7 @@ import cv2
 import argparse, os, random
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+#import torch.nn.functional as F
 import torchvision
 from torchvision import datasets, transforms
 import pandas as pd
@@ -105,6 +105,7 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
     model.load_state_dict(model_dict)
 
     model.cuda()
+    #model.to(torch.device('cuda:1'))
     model.train(False)
 
     # video reading loop
@@ -151,7 +152,7 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
                 output = model(img.cuda())
                 if jitter > 0:
                     output = torch.mean(output, 0)
-                score = F.sigmoid(output).item()
+                score = torch.sigmoid(output).item()
 
                 coloridx = min(int(round(score*10)),9)
                 draw = ImageDraw.Draw(frame)
@@ -177,7 +178,7 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
     if save_text:
         f.close()
     cap.release()
-    print 'DONE!'
+    print('DONE!')
 
 
 if __name__ == "__main__":
