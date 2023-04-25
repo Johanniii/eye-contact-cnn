@@ -52,6 +52,10 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
     red = Color("red")
     colors = list(red.range_to(Color("green"),10))
     font = ImageFont.truetype("data/arial.ttf", 40)
+    
+    
+    # used for face detection
+    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
     # set up video source
     if video_path is None:
@@ -89,8 +93,8 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
         print("Error opening video stream or file")
         exit()
 
-    if facemode == 'DLIB':
-        cnn_face_detector = dlib.cnn_face_detection_model_v1(CNN_FACE_MODEL)
+    # if facemode == 'DLIB':
+    #     cnn_face_detector = dlib.cnn_face_detection_model_v1(CNN_FACE_MODEL)
     frame_cnt = 0
 
     # set up data transformation
@@ -117,22 +121,37 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
 
             frame_cnt += 1
             bbox = []
-            if facemode == 'DLIB':
-                dets = cnn_face_detector(frame, 1)
-                for d in dets:
-                    l = d.rect.left()
-                    r = d.rect.right()
-                    t = d.rect.top()
-                    b = d.rect.bottom()
-                    # expand a bit
-                    l -= (r-l)*0.2
-                    r += (r-l)*0.2
-                    t -= (b-t)*0.2
-                    b += (b-t)*0.2
-                    bbox.append([l,t,r,b])
-            elif facemode == 'GIVEN':
-                if frame_cnt in df.index:
-                    bbox.append([df.loc[frame_cnt,'left'],df.loc[frame_cnt,'top'],df.loc[frame_cnt,'right'],df.loc[frame_cnt,'bottom']])
+            # if facemode == 'DLIB':
+            #     dets = cnn_face_detector(frame, 1)
+            #     for d in dets:
+            #         l = d.rect.left()
+            #         r = d.rect.right()
+            #         t = d.rect.top()
+            #         b = d.rect.bottom()
+            #         # expand a bit
+            #         l -= (r-l)*0.2
+            #         r += (r-l)*0.2
+            #         t -= (b-t)*0.2
+            #         b += (b-t)*0.2
+            #         bbox.append([l,t,r,b])
+            # elif facemode == 'GIVEN':
+            #     if frame_cnt in df.index:
+            #         bbox.append([df.loc[frame_cnt,'left'],df.loc[frame_cnt,'top'],df.loc[frame_cnt,'right'],df.loc[frame_cnt,'bottom']])
+
+
+            _, img = cap.read()
+            # Convert to grayscale
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # Detect the faces
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            
+            # adds to bbox
+            for (x,y,w,h) in (faces):
+                bbox.append([x,y,x+w,y+h])
+
+               
+
+
 
             frame = Image.fromarray(frame)
             for b in bbox:
