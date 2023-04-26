@@ -1,5 +1,7 @@
 import cv2
 def cascade(frame):
+    """Source: https://towardsdatascience.com/face-detection-in-2-minutes-using-opencv-python-90f89d7c0f81
+"""
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
