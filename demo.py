@@ -101,7 +101,7 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
         if ret == True:
             frame_cnt+=1
 
-            bbox, frame = face_detection_functions.face_detection(frame, "cascade")
+            bbox, frame = face_detection_functions.face_detection(frame, "mediapipe")
 
             frame = Image.fromarray(frame)
             for b in bbox:

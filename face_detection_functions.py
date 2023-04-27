@@ -1,5 +1,7 @@
 import cv2
 import dlib
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
 
 def face_detection(frame, algorithm):
     if algorithm == "cascade":
@@ -44,4 +46,15 @@ def face_detection(frame, algorithm):
         faces, _ = cv2.detect_face(frame)# loop through detected faces and add bounding box
         for face in faces: 
             bbox.append([face[0],face[1],face[2],face[3]])
+    elif algorithm == "mediapipe":
+        
+        # STEP 2: Create an FaceDetector object.
+        base_options = python.BaseOptions(model_asset_path='detector.tflite')
+        options = vision.FaceDetectorOptions(base_options=base_options)
+        detector = vision.FaceDetector.create_from_options(options)
+
+        # STEP 4: Detect faces in the input image.
+        detection_result = detector.detect(frame)
+        bbox.append(detection_result.detection.bounding_box)
+        
     return bbox, frame
