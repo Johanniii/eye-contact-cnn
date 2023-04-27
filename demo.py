@@ -28,7 +28,7 @@ parser.add_argument('-display_off', help='do not display frames', action='store_
 
 args = parser.parse_args()
 
-CNN_FACE_MODEL = 'data/mmod_human_face_detector.dat' # from http://dlib.net/files/mmod_human_face_detector.dat.bz2
+#CNN_FACE_MODEL = 'data/mmod_human_face_detector.dat' # from http://dlib.net/files/mmod_human_face_detector.dat.bz2
 
 
 def bbox_jitter(bbox_left, bbox_top, bbox_right, bbox_bottom):
@@ -101,7 +101,7 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
         if ret == True:
             frame_cnt+=1
 
-            bbox, frame = face_detection_functions.cascade(frame)
+            bbox, frame = face_detection_functions.face_detection(frame, "dlib")
 
             frame = Image.fromarray(frame)
             for b in bbox:
