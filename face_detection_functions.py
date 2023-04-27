@@ -3,8 +3,12 @@ import dlib
 
 def face_detection(frame, algorithm):
     if algorithm == "cascade":
-        """Source: https://towardsdatascience.com/face-detection-in-2-minutes-using-opencv-python-90f89d7c0f81"""
-        face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+        """Source: https://towardsdatascience.com/face-detection-in-2-minutes-using-opencv-python-90f89d7c0f81
+        
+        viele verschiedene cascade möglichkeiten, sollte man durchlaufen lassen.
+        https://github.com/anaustinbeing/haar-cascade-files/blob/master/haarcascade_frontalface_alt.xml
+        """
+        face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt.xml') # 'haarcascade_frontalface_default.xml'
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -36,4 +40,8 @@ def face_detection(frame, algorithm):
             t -= (b-t)*0.2
             b += (b-t)*0.2
             bbox.append([l,t,r,b])
+    elif algorithm == "new":
+        faces, _ = cv2.detect_face(frame)# loop through detected faces and add bounding box
+        for face in faces: 
+            bbox.append([face[0],face[1],face[2],face[3]])
     return bbox, frame
