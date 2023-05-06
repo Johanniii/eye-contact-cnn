@@ -1,18 +1,21 @@
 """Gute Suche vielleicht (aber noch nicht angeschaut)
 
 face detection bounding box face masks
-
-- für mtcnn muss erst tensorflow installiert werden, vielleicht 
-funktioniert es dann, habe aber kein Internet. 
 """
 
 
 import cv2
 import dlib
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
-#from mtcnn.mtcnn import MTCNN
+from mediapipe import tasks
 
+
+# dafür erst tensorflow installieren
+from mtcnn.mtcnn import MTCNN
+import numpy as np
+
+# version 0.9.3.0 - niedrigere funktionieren nicht, aber jetzt ist ein anderer Fehler
+from mediapipe import tasks
+from mediapipe.tasks import python
 
 def face_detection(frame, algorithm):
     if algorithm == "cascade":
@@ -53,27 +56,34 @@ def face_detection(frame, algorithm):
             t -= (b-t)*0.2
             b += (b-t)*0.2
             bbox.append([l,t,r,b])
-    elif algorithm == "new":
-        faces, _ = cv2.detect_face(frame)# loop through detected faces and add bounding box
-        for face in faces: 
-            bbox.append([face[0],face[1],face[2],face[3]])
+
     elif algorithm == "mediapipe":
-        
+
+        # funktioniert nicht mehr, hatte ja eigentlich schon mal funktioniert?
+
+
+        # https://github.com/googlesamples/mediapipe/blob/main/examples/face_detector/python/face_detector.ipynb
         # STEP 2: Create an FaceDetector object.
-        base_options = python.BaseOptions(model_asset_path='detector.tflite')
-        options = vision.FaceDetectorOptions(base_options=base_options)
-        detector = vision.FaceDetector.create_from_options(options)
+        base_options = python.BaseOptions(model_asset_path='face_detection_short_range.tflite')
+        options = tasks.vision.FaceDetectorOptions(base_options=base_options)
+        detector = tasks.vision.FaceDetector.create_from_options(options)
 
         # STEP 4: Detect faces in the input image.
         detection_result = detector.detect(frame)
         bbox.append(detection_result.detection.bounding_box)
-    
-    # elif algorithm == "mtcnn":
-    #     # https://machinelearningmastery.com/how-to-perform-face-detection-with-classical-and-deep-learning-methods-in-python-with-keras/
-    #     detector = MTCNN()
-    #     faces = detector.detect_faces(frame)
-    #     bbox.append(faces.result["box"])
+        print(detection_result.detection.bounding_box)
 
+    elif algorithm == "mtcnn":
+        """ Nicht besonders schnell, vermutlich nicht zielführend """
+        # https://machinelearningmastery.com/how-to-perform-face-detection-with-classical-and-deep-learning-methods-in-python-with-keras/
+        detector = MTCNN()
+        faces = detector.detect_faces(frame)
+        bbox = []
+        print(faces)
+        if faces : 
+            results = faces[0]["box"]
+            bbox  = [[results[0], results[1], results[0]+ results[2], results[1]+ results[3]]]
+    
     else: 
         raise Exception("Dieser Algoritmus existiert nicht...")
     return bbox, frame
