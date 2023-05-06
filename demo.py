@@ -19,12 +19,12 @@ import face_detection_functions
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--video', type=str, help='input video path. live cam is used when not specified')
-parser.add_argument('--face', type=str, help='face detection file path. dlib face detector is used when not specified')
 parser.add_argument('--model_weight', type=str, help='path to model weights file', default='data/model_weights.pkl')
 parser.add_argument('--jitter', type=int, help='jitter bbox n times, and average results', default=0)
 parser.add_argument('-save_vis', help='saves output as video', action='store_true')
 parser.add_argument('-save_text', help='saves output as text', action='store_true')
 parser.add_argument('-display_off', help='do not display frames', action='store_true')
+parser.add_argument('--face_detector', type=str, help='the face detector from face_detection_functions.py', default="cascade")
 
 args = parser.parse_args()
 
@@ -48,7 +48,7 @@ def drawrect(drawcontext, xy, outline=None, width=0):
     drawcontext.line(points, fill=outline, width=width)
 
 
-def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text):
+def run(video_path, model_weight, jitter, vis, display_off, save_text, face_detector):
     # set up vis settings
     red = Color("red")
     colors = list(red.range_to(Color("green"),10))
@@ -101,7 +101,7 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
         if ret == True:
             frame_cnt+=1
 
-            bbox, frame = face_detection_functions.face_detection(frame, "mediapipe")
+            bbox, frame = face_detection_functions.face_detection(frame, face_detector)
 
             frame = Image.fromarray(frame)
             for b in bbox:
@@ -151,4 +151,4 @@ def run(video_path, face_path, model_weight, jitter, vis, display_off, save_text
 
 
 if __name__ == "__main__":
-    run(args.video, args.face, args.model_weight, args.jitter, args.save_vis, args.display_off, args.save_text)
+    run(args.video, args.model_weight, args.jitter, args.save_vis, args.display_off, args.save_text, args.face_detector)

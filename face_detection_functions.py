@@ -1,7 +1,18 @@
+"""Gute Suche vielleicht (aber noch nicht angeschaut)
+
+face detection bounding box face masks
+
+- für mtcnn muss erst tensorflow installiert werden, vielleicht 
+funktioniert es dann, habe aber kein Internet. 
+"""
+
+
 import cv2
 import dlib
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+#from mtcnn.mtcnn import MTCNN
+
 
 def face_detection(frame, algorithm):
     if algorithm == "cascade":
@@ -56,5 +67,13 @@ def face_detection(frame, algorithm):
         # STEP 4: Detect faces in the input image.
         detection_result = detector.detect(frame)
         bbox.append(detection_result.detection.bounding_box)
-        
+    
+    # elif algorithm == "mtcnn":
+    #     # https://machinelearningmastery.com/how-to-perform-face-detection-with-classical-and-deep-learning-methods-in-python-with-keras/
+    #     detector = MTCNN()
+    #     faces = detector.detect_faces(frame)
+    #     bbox.append(faces.result["box"])
+
+    else: 
+        raise Exception("Dieser Algoritmus existiert nicht...")
     return bbox, frame
