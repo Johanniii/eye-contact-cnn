@@ -7,7 +7,7 @@ face detection bounding box face masks
 import cv2
 import dlib
 from mediapipe import tasks
-
+import mediapipe as mp
 
 # dafür erst tensorflow installieren
 from mtcnn.mtcnn import MTCNN
@@ -61,17 +61,19 @@ def face_detection(frame, algorithm):
 
         # funktioniert nicht mehr, hatte ja eigentlich schon mal funktioniert?
 
-
+        bbox = []
         # https://github.com/googlesamples/mediapipe/blob/main/examples/face_detector/python/face_detector.ipynb
         # STEP 2: Create an FaceDetector object.
         base_options = python.BaseOptions(model_asset_path='face_detection_short_range.tflite')
-        options = tasks.vision.FaceDetectorOptions(base_options=base_options)
-        detector = tasks.vision.FaceDetector.create_from_options(options)
+        options = python.vision.FaceDetectorOptions(base_options=base_options)
+        detector = python.vision.FaceDetector.create_from_options(options)
+
+        frame = mp.Image(image_format= mp.ImageFormat.SRGB, data = frame)
 
         # STEP 4: Detect faces in the input image.
         detection_result = detector.detect(frame)
-        bbox.append(detection_result.detection.bounding_box)
-        print(detection_result.detection.bounding_box)
+        bounding_box = detection_result.detections[0].bounding_box
+        bbox.append([bounding_box.origin_x, bounding_box.origin_y, bounding_box.width + bounding_box.origin_x, bounding_box.height + bounding_box.origin_y])
 
     elif algorithm == "mtcnn":
         """ Nicht besonders schnell, vermutlich nicht zielführend """
@@ -84,6 +86,46 @@ def face_detection(frame, algorithm):
             results = faces[0]["box"]
             bbox  = [[results[0], results[1], results[0]+ results[2], results[1]+ results[3]]]
     
+    elif algorithm == "mp_test":
+        mp_face_detection = mp.solutions.face_detection
+        mp_drawing = mp.solutions.drawing_utils
+
+        # For static images:
+        with mp_face_detection.FaceDetection(
+            model_selection=1, min_detection_confidence=0.5) as face_detection:
+            results = face_detection.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        if results.detections:
+            for detection in results.detections:
+                mp_drawing.draw_detection(frame, detection)
+        print(results)
+
+    elif algorithm == "mp_test2":
+        mp_face_detection = mp.solutions.face_detection
+
+        with mp_face_detection.FaceDetection(
+            model_selection=1, min_detection_confidence=0.5) as face_detection:
+            results = face_detection.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        bbox = []
+        if results.multi_face_landmarks:
+            for faceLms in results.multi_face_landmarks:
+                h, w, c = frame.shape
+                cx_min=  w
+                cy_min = h
+                cx_max= cy_max= 0
+                for id, lm in enumerate(faceLms.landmark):
+                    cx, cy = int(lm.x * w), int(lm.y * h)
+                    if cx<cx_min:
+                        cx_min=cx
+                    if cy<cy_min:
+                        cy_min=cy
+                    if cx>cx_max:
+                        cx_max=cx
+                    if cy>cy_max:
+                        cy_max=cy
+            #    cv2.rectangle(frame, (cx_min, cy_min), (cx_max, cy_max), (255, 255, 0), 2)
+            print(cx_min, cy_min, cx_max, cy_max)
+            bbox.append([cx_min, cy_min, cx_max, cy_max])
+
     else: 
         raise Exception("Dieser Algoritmus existiert nicht...")
-    return bbox, frame
+    return bbox
