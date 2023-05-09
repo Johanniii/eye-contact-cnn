@@ -67,7 +67,7 @@ def run(video_path, model_weight, jitter, vis, display_off, save_text, face_dete
 
     # set up output file
     if save_text:
-        outtext_name = os.path.basename(video_path).replace('.avi','_output.txt')
+        outtext_name = os.path.basename(video_path).replace('.mp4','_output.txt')
         f = open(outtext_name, "w")
     if vis:
         outvis_name = os.path.basename(video_path).replace('.avi','_output.avi')
@@ -101,9 +101,9 @@ def run(video_path, model_weight, jitter, vis, display_off, save_text, face_dete
         if ret == True:
             frame_cnt+=1
 
-            bbox, frame = face_detection_functions.face_detection(frame, face_detector)
+            bbox = face_detection_functions.face_detection(frame, face_detector)            
 
-            frame = Image.fromarray(frame)
+            frame = Image.fromarray(frame)           
             for b in bbox:
                 face = frame.crop((b))
                 img = test_transforms(face)
