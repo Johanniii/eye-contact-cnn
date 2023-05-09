@@ -26,8 +26,6 @@ def face_detection(frame, algorithm):
         """
         face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt.xml') # 'haarcascade_frontalface_default.xml'
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
         bbox = []
 
         # Convert to grayscale
@@ -58,8 +56,9 @@ def face_detection(frame, algorithm):
             bbox.append([l,t,r,b])
 
     elif algorithm == "mediapipe":
-
-        # funktioniert nicht mehr, hatte ja eigentlich schon mal funktioniert?
+        """ Für diesen algorithmus braucht man vermutlich eher zugeschnittene Videos, es scheint für Selfie-Sicht optimiert zu sein... 
+        Sonst erkennt der aber sogar Ärzte, die mit cascade fast gar nicht erkannt werden können
+        """
 
         bbox = []
         # https://github.com/googlesamples/mediapipe/blob/main/examples/face_detector/python/face_detector.ipynb
@@ -69,11 +68,12 @@ def face_detection(frame, algorithm):
         detector = python.vision.FaceDetector.create_from_options(options)
 
         frame = mp.Image(image_format= mp.ImageFormat.SRGB, data = frame)
-
+        
         # STEP 4: Detect faces in the input image.
         detection_result = detector.detect(frame)
-        bounding_box = detection_result.detections[0].bounding_box
-        bbox.append([bounding_box.origin_x, bounding_box.origin_y, bounding_box.width + bounding_box.origin_x, bounding_box.height + bounding_box.origin_y])
+        if detection_result.detections:
+            bounding_box = detection_result.detections[0].bounding_box
+            bbox.append([bounding_box.origin_x, bounding_box.origin_y, bounding_box.width + bounding_box.origin_x, bounding_box.height + bounding_box.origin_y])
 
     elif algorithm == "mtcnn":
         """ Nicht besonders schnell, vermutlich nicht zielführend """

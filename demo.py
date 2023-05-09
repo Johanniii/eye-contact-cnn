@@ -50,7 +50,9 @@ def drawrect(drawcontext, xy, outline=None, width=0):
 
 def run(video_path, model_weight, jitter, vis, display_off, save_text, face_detector):
     # set up vis settings
-    red = Color("red")
+    
+    # das hier wird so invertiert, dass dort später wieder rot draus wird... sollte weniger unsinnig programmiert werden ;)
+    red = Color("blue")
     colors = list(red.range_to(Color("green"),10))
     font = ImageFont.truetype("data/arial.ttf", 40)
     
@@ -103,7 +105,7 @@ def run(video_path, model_weight, jitter, vis, display_off, save_text, face_dete
 
             bbox = face_detection_functions.face_detection(frame, face_detector)            
 
-            frame = Image.fromarray(frame)           
+            frame = Image.fromarray(frame, mode = "RGB")           
             for b in bbox:
                 face = frame.crop((b))
                 img = test_transforms(face)
@@ -132,7 +134,7 @@ def run(video_path, model_weight, jitter, vis, display_off, save_text, face_dete
 
             if not display_off:
                 frame = np.asarray(frame) # convert PIL image back to opencv format for faster display
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 cv2.imshow('',frame)
                 if vis:
                     outvid.write(frame)
