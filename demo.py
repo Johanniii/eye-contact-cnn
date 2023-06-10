@@ -16,11 +16,22 @@ from colour import Color
 
 import face_detection_functions
 
+
+# for lime
+from lime import lime_image
+from skimage.segmentation import mark_boundaries
+import matplotlib.pyplot as plt 
+
+# für Laufzeitanalysen
+import cProfile
+from pstats import Stats
+
+
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--video', type=str, help='input video path. live cam is used when not specified')
 parser.add_argument('--model_weight', type=str, help='path to model weights file', default='data/model_weights.pkl')
-parser.add_argument('--jitter', type=int, help='jitter bbox n times, and average results', default=0)
 parser.add_argument('-save_vis', help='saves output as video', action='store_true')
 parser.add_argument('-save_text', help='saves output as text', action='store_true')
 parser.add_argument('-display_off', help='do not display frames', action='store_true')
@@ -28,27 +39,13 @@ parser.add_argument('--face_detector', type=str, help='the face detector from fa
 
 args = parser.parse_args()
 
-#CNN_FACE_MODEL = 'data/mmod_human_face_detector.dat' # from http://dlib.net/files/mmod_human_face_detector.dat.bz2
-
-
-def bbox_jitter(bbox_left, bbox_top, bbox_right, bbox_bottom):
-    cx = (bbox_right+bbox_left)/2.0
-    cy = (bbox_bottom+bbox_top)/2.0
-    scale = random.uniform(0.8, 1.2)
-    bbox_right = (bbox_right-cx)*scale + cx
-    bbox_left = (bbox_left-cx)*scale + cx
-    bbox_top = (bbox_top-cy)*scale + cy
-    bbox_bottom = (bbox_bottom-cy)*scale + cy
-    return bbox_left, bbox_top, bbox_right, bbox_bottom
-
-
 def drawrect(drawcontext, xy, outline=None, width=0):
     (x1, y1), (x2, y2) = xy
     points = (x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)
     drawcontext.line(points, fill=outline, width=width)
 
 
-def run(video_path, model_weight, jitter, vis, display_off, save_text, face_detector):
+def run(video_path, model_weight, vis, display_off, save_text, face_detector):
     # set up vis settings
     
     # das hier wird so invertiert, dass dort später wieder rot draus wird... sollte weniger unsinnig programmiert werden ;)
@@ -56,10 +53,6 @@ def run(video_path, model_weight, jitter, vis, display_off, save_text, face_dete
     colors = list(red.range_to(Color("green"),10))
     font = ImageFont.truetype("data/arial.ttf", 40)
     
-    
-    # used for face detection
-    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-
     # set up video source
     if video_path is None:
         cap = cv2.VideoCapture(0)
@@ -103,34 +96,29 @@ def run(video_path, model_weight, jitter, vis, display_off, save_text, face_dete
         if ret == True:
             frame_cnt+=1
 
-            bbox = face_detection_functions.face_detection(frame, face_detector)            
+            bbox = face_detection_functions.face_detection(frame, face_detector)
 
-            frame = Image.fromarray(frame, mode = "RGB")           
+            frame = Image.fromarray(frame, mode = "RGB")
             for b in bbox:
                 face = frame.crop((b))
                 img = test_transforms(face)
                 img.unsqueeze_(0)
-                if jitter > 0:
-                    for i in range(jitter):
-                        bj_left, bj_top, bj_right, bj_bottom = bbox_jitter(b[0], b[1], b[2], b[3])
-                        bj = [bj_left, bj_top, bj_right, bj_bottom]
-                        facej = frame.crop((bj))
-                        img_jittered = test_transforms(facej)
-                        img_jittered.unsqueeze_(0)
-                        img = torch.cat([img, img_jittered])
 
                 # forward pass
                 output = model(img.cuda())
-                if jitter > 0:
-                    output = torch.mean(output, 0)
                 score = torch.sigmoid(output).item()
-
-                coloridx = min(int(round(score*10)),9)
+                score = float(score)
+                coloridx = min(int(round(score)*10),9)
                 draw = ImageDraw.Draw(frame)
                 drawrect(draw, [(b[0], b[1]), (b[2], b[3])], outline=colors[coloridx].hex, width=5)
                 draw.text((b[0],b[3]), str(round(score,2)), fill=(255,255,255,128), font=font)
                 if save_text:
                     f.write("%d,%f\n"%(frame_cnt,score))
+                    if frame_cnt >= 20500:
+                        print("DONE!")
+                        f.close()
+                        raise KeyError
+
 
             if not display_off:
                 frame = np.asarray(frame) # convert PIL image back to opencv format for faster display
@@ -151,6 +139,10 @@ def run(video_path, model_weight, jitter, vis, display_off, save_text, face_dete
     cap.release()
     print('DONE!')
 
-
 if __name__ == "__main__":
-    run(args.video, args.model_weight, args.jitter, args.save_vis, args.display_off, args.save_text, args.face_detector)
+    pr = cProfile.Profile()
+    pr.enable()
+    run(args.video, args.model_weight, args.save_vis, args.display_off, args.save_text, args.face_detector)
+    pr.disable()
+    stats = Stats(pr)
+    stats.sort_stats('tottime').print_stats(10)
