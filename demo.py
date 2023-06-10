@@ -1,26 +1,16 @@
-import dlib
 import cv2
-import argparse, os, random
+import argparse, os
 import torch
-import torch.nn as nn
-#import torch.nn.functional as F
-import torchvision
-from torchvision import datasets, transforms
-import pandas as pd
+
+from torchvision import transforms
 import numpy as np
 from model import model_static
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
+from PIL import Image, ImageDraw, ImageFont
 from colour import Color
 
+# self written function for the face detectors
 import face_detection_functions
 
-
-# for lime
-from lime import lime_image
-from skimage.segmentation import mark_boundaries
-import matplotlib.pyplot as plt 
 
 # für Laufzeitanalysen
 import cProfile
@@ -39,7 +29,16 @@ parser.add_argument('--face_detector', type=str, help='the face detector from fa
 
 args = parser.parse_args()
 
+
 def drawrect(drawcontext, xy, outline=None, width=0):
+    """Draws the rectangle around the face in the final result.
+
+    Args:
+        drawcontext (function): The plotting function
+        xy (list): contains x,y values for the top left corner and for the lower right corner
+        outline (str, optional): The color for the outline of the rectangle in hex. Defaults to None.
+        width (int, optional): The broadness of the rectangle. Defaults to 0.
+    """
     (x1, y1), (x2, y2) = xy
     points = (x1, y1), (x2, y1), (x2, y2), (x1, y2), (x1, y1)
     drawcontext.line(points, fill=outline, width=width)
@@ -48,7 +47,7 @@ def drawrect(drawcontext, xy, outline=None, width=0):
 def run(video_path, model_weight, vis, display_off, save_text, face_detector):
     # set up vis settings
     
-    # das hier wird so invertiert, dass dort später wieder rot draus wird... sollte weniger unsinnig programmiert werden ;)
+    # das hier wird so invertiert, dass dort später wieder rot draus wird
     red = Color("blue")
     colors = list(red.range_to(Color("green"),10))
     font = ImageFont.truetype("data/arial.ttf", 40)
@@ -96,19 +95,25 @@ def run(video_path, model_weight, vis, display_off, save_text, face_detector):
         if ret == True:
             frame_cnt+=1
 
+            # calls a face detector function to return the rectangular coordinates around the detected face.  
             bbox = face_detection_functions.face_detection(frame, face_detector)
 
             frame = Image.fromarray(frame, mode = "RGB")
             for b in bbox:
+
+                # because the model is only trained for the face and not the whole frame, 
+                # the face is cropped to the detected bounding box around the face 
                 face = frame.crop((b))
                 img = test_transforms(face)
                 img.unsqueeze_(0)
 
-                # forward pass
+                # forward pass; evaluation of the face with the model
                 output = model(img.cuda())
                 score = torch.sigmoid(output).item()
                 score = float(score)
                 coloridx = min(int(round(score)*10),9)
+
+                # draw video frame with the original frame, a bounding box around the face and the rounded calculated score 
                 draw = ImageDraw.Draw(frame)
                 drawrect(draw, [(b[0], b[1]), (b[2], b[3])], outline=colors[coloridx].hex, width=5)
                 draw.text((b[0],b[3]), str(round(score,2)), fill=(255,255,255,128), font=font)
@@ -121,8 +126,8 @@ def run(video_path, model_weight, vis, display_off, save_text, face_detector):
 
 
             if not display_off:
-                frame = np.asarray(frame) # convert PIL image back to opencv format for faster display
-                #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # convert PIL image back to opencv format for faster display
+                frame = np.asarray(frame)
                 cv2.imshow('',frame)
                 if vis:
                     outvid.write(frame)
