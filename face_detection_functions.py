@@ -1,8 +1,7 @@
-"""Gute Suche vielleicht (aber noch nicht angeschaut)
-
-face detection bounding box face masks
+"""Im Folgenden sind verschiedene Gesichtserkennungen, die für eye-contact-cnn nutzbar sind. Besondere Aufmerksamkeit ist auf 
+Cascade und Mediapipe gefallen. Diese lassen sich jedoch beliebig austauschen und auch weitere Gesichtserkennungen sollten 
+getestet werden. Besonders solche, die für Gesichtserkennung mit OP-Masken optimiert sind, sollten gefunden und getestet werden.
 """
-
 
 import cv2
 import dlib
@@ -19,6 +18,8 @@ from mediapipe.tasks import python
 
 def face_detection(frame, algorithm):
     if algorithm == "cascade":
+
+
         """Source: https://towardsdatascience.com/face-detection-in-2-minutes-using-opencv-python-90f89d7c0f81
         
         viele verschiedene cascade möglichkeiten, sollte man durchlaufen lassen.
@@ -37,7 +38,31 @@ def face_detection(frame, algorithm):
         for (x,y,w,h) in (faces):
             bbox.append([x,y,x+w,y+h])
 
+
+    if algorithm == "cascade_bigger_box":
+        # funkioniert analog zu cascade, die Bounding box ist aber etwas größer
+        face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt.xml') # 'haarcascade_frontalface_default.xml'
+
+        bbox = []
+
+        # Convert to grayscale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Detect the faces (mehr als nötig?)
+        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+        
+        # adds the coordinates of the face Umriss to bbox
+        for (x,y,w,h) in (faces):
+        	# expand a bit
+            l = x - w*0.2
+            r = x+w + w*0.2
+            t = y-h*0.2
+            b = y+h+h*0.2
+            bbox.append([l,t,r,b])
+            
+
     elif algorithm == "dlib":
+        # ursprüngliches Modell in eye-contact-cnn, ist aber laufzeittechnisch nicht anwendbar
+
         CNN_FACE_MODEL = 'data/mmod_human_face_detector.dat' # from http://dlib.net/files/mmod_human_face_detector.dat.bz2
         cnn_face_detector = dlib.cnn_face_detection_model_v1(CNN_FACE_MODEL)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -56,7 +81,7 @@ def face_detection(frame, algorithm):
             bbox.append([l,t,r,b])
 
     elif algorithm == "mediapipe":
-        """ Für diesen algorithmus braucht man vermutlich eher zugeschnittene Videos, es scheint für Selfie-Sicht optimiert zu sein... 
+        """ Für diesen algorithmus braucht man  eher zugeschnittene Videos, es scheint für Selfie-Sicht optimiert zu sein.
         Sonst erkennt der aber sogar Ärzte, die mit cascade fast gar nicht erkannt werden können
         """
 
