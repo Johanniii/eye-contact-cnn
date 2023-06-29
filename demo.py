@@ -64,7 +64,7 @@ def run(video_path, model_weight, vis, display_off, save_text, face_detector):
         outtext_name = os.path.basename(video_path).replace('.mp4','_output.txt')
         f = open(outtext_name, "w")
     if vis:
-        outvis_name = os.path.basename(video_path).replace('.avi','_output.avi')
+        outvis_name = os.path.basename(video_path).replace('.mp4','_output.mp4')
         imwidth = int(cap.get(3)); imheight = int(cap.get(4))
         outvid = cv2.VideoWriter(outvis_name,cv2.VideoWriter_fourcc('M','J','P','G'), cap.get(5), (imwidth,imheight))
 
@@ -86,7 +86,6 @@ def run(video_path, model_weight, vis, display_off, save_text, face_detector):
     model.load_state_dict(model_dict)
 
     model.cuda()
-    #model.to(torch.device('cuda:1'))
     model.train(False)
 
     # video reading loop
@@ -119,7 +118,7 @@ def run(video_path, model_weight, vis, display_off, save_text, face_detector):
                 draw.text((b[0],b[3]), str(round(score,2)), fill=(255,255,255,128), font=font)
                 if save_text:
                     f.write("%d,%f\n"%(frame_cnt,score))
-                    if frame_cnt >= 20500:
+                    if frame_cnt >= 17000:
                         print("DONE!")
                         f.close()
                         raise KeyError
@@ -145,6 +144,7 @@ def run(video_path, model_weight, vis, display_off, save_text, face_detector):
     print('DONE!')
 
 if __name__ == "__main__":
+    # Zeit messen für den eigentlichen run Befehl
     pr = cProfile.Profile()
     pr.enable()
     run(args.video, args.model_weight, args.save_vis, args.display_off, args.save_text, args.face_detector)
